@@ -1,28 +1,25 @@
 (ns card-game-war.game)
 
-;; cards represented by 0-51. 0-12=2,3,4...,J,Q,K,A
-;; spades = 0-12, clubs = 13-25, diamonds = 26-38, hearts = 39-51
+;; use base 13 number system to represent cards. first digit is rank, second digit is suit (spades = 0, clubs = 1, diamonds = 2, hearts = 3)
+(defn compare-cards [cards]
+  (let [ranks (into {} (for [[player card] cards] [player (mod card 13)]))
+        suits (into {} (for [[player card] cards] [player (quot card 13)]))]
+    (key (apply max-key val
+      (cond
+        (= (ranks :player1) (ranks :player2)) suits
+        :else ranks)))))
 
-;; TODO: take in map of player1->card to clean things up
-(defn compare-cards [player1-card player2-card]
-  (let [ranks (map #(-> (mod % 13)) [player1-card player2-card])
-        suits (map #(-> (quot % 13)) [player1-card player2-card])]
+(defn play-round [player-cards]
+  (let [player1-card (first (player-cards :player1))
+        player2-card (first (player-cards :player2))
+        winner (compare-cards {:player1 player1-card :player2 player2-card})]
     (cond
-      (> (nth ranks 0) (nth ranks 1)) "player1"
-      (< (nth ranks 0) (nth ranks 1)) "player2"
-      (> (nth suits 0) (nth suits 1)) "player1"
-      (< (nth suits 0) (nth suits 1)) "player2")))
+      (= winner :player1) {:player1 (concat (rest (player-cards :player1)) [player1-card player2-card]) :player2 (rest (player-cards :player2))}
+      (= winner :player2) {:player1 (rest (player-cards :player1)) :player2 (concat (rest (player-cards :player2)) [player2-card player1-card])})))
 
-(defn play-round [player1-cards player2-cards]
-  (let [[player1-card & player1-deck] player1-cards
-        [player2-card & player2-deck] player2-cards
-        winner (compare-cards player1-card player2-card)]
+(defn play-game [player-cards]
+  (loop [player-decks player-cards]
     (cond
-      (= winner "player1") [(conj player1-deck player1-card player2-card) player2-deck]
-      (= winner "player2") [player1-deck (conj player2-deck player2-card player1-card)])))
-
-(defn play-game [player1-cards player2-cards]
-  (cond
-    (empty? player1-cards) "player2"
-    (empty? player2-cards) "player1"
-    :else (apply play-game (play-round player1-cards player2-cards))))
+      (empty? (player-decks :player1)) :player2
+      (empty? (player-decks :player2)) :player1
+      :else (recur (play-round player-decks)))))
