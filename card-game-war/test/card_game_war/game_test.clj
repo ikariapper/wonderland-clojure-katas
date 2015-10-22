@@ -33,6 +33,6 @@
     (is (= :player1 (play-game {:player1 '(26 23 51 12) :player2 '(9 12 34 11)})))
     (is (= :player1 (play-game {:player1 '(30 14 51 23) :player2 '(47 34 12 29)}))))
   (testing "test with randomly dealt cards"
-    (is (= :player1 (play-game (deal))))))
+    (play-game (deal))))
 
 
